@@ -3,26 +3,29 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 )
 
 func main() {
 
-	header()
-	menu()
-	command := readCommand()
+	for {
+		header()
+		menu()
+		command := readCommand()
 
-	switch command {
-	case 1:
-		fmt.Println("Monitorando...")
-	case 2:
-		fmt.Println("Exibindo Logs...")
-	case 0:
-		fmt.Println("Saindo do programa...")
-		os.Exit(0)
-	default:
-		fmt.Println("Comando não conhecido!")
-		os.Exit(-1)
+		switch command {
+		case 1:
+			startsMonitoring()
+		case 2:
+			fmt.Println("Exibindo Logs...")
+		case 0:
+			fmt.Println("Saindo do programa...")
+			os.Exit(0)
+		default:
+			fmt.Println("Comando não conhecido!")
+			os.Exit(-1)
+		}
 	}
 }
 
@@ -50,4 +53,19 @@ func readCommand() int {
 	fmt.Println("O comando escolhido foi", command)
 
 	return command
+}
+
+func startsMonitoring() {
+	fmt.Println("Monitorando...")
+	site := "https://httpstat.us/Random/200,201,208,400,404,500"
+	resp, err := http.Get(site)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	if resp.StatusCode >= 200 && resp.StatusCode <= 208 {
+		fmt.Println("Site:", site, "foi carregado com sucesso!")
+	} else {
+		fmt.Println("Site:", site, "está com problemas. Status Code:", resp.StatusCode)
+	}
 }
