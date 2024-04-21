@@ -5,12 +5,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
+)
+
+const (
+	numerOfMonitoring = 5
+	delay             = 5
 )
 
 func main() {
-
+	header()
 	for {
-		header()
 		menu()
 		command := readCommand()
 
@@ -57,15 +62,36 @@ func readCommand() int {
 
 func startsMonitoring() {
 	fmt.Println("Monitorando...")
-	site := "https://httpstat.us/Random/200,201,208,400,404,500"
+
+	sites := []string{
+		"https://httpstat.us/Random/200,201,208,400,404,500",
+		"https://www.alura.com.br",
+		"https://www.caelum.com.br",
+	}
+
+	for i := 0; i < numerOfMonitoring; i++ {
+		for i, site := range sites {
+			fmt.Println("Testando site:", i, ", Site:", site)
+			siteTest(site)
+		}
+
+		time.Sleep(delay * time.Second)
+	}
+
+	fmt.Println()
+}
+
+func siteTest(site string) {
 	resp, err := http.Get(site)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	if resp.StatusCode >= 200 && resp.StatusCode <= 208 {
+	statusCode := resp.StatusCode
+
+	if statusCode >= 200 && statusCode <= 208 {
 		fmt.Println("Site:", site, "foi carregado com sucesso!")
 	} else {
-		fmt.Println("Site:", site, "está com problemas. Status Code:", resp.StatusCode)
+		fmt.Println("Site:", site, "está com problemas. Status Code:", statusCode)
 	}
 }
