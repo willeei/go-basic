@@ -1,16 +1,21 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
 const (
 	numerOfMonitoring = 5
 	delay             = 5
+	errorMessage      = "Ocorreu um erro:"
 )
 
 func main() {
@@ -24,6 +29,7 @@ func main() {
 			startsMonitoring()
 		case 2:
 			fmt.Println("Exibindo Logs...")
+			printLogs()
 		case 0:
 			fmt.Println("Saindo do programa...")
 			os.Exit(0)
@@ -39,12 +45,14 @@ func header() {
 	version := 1.1
 	fmt.Println("Olá, sr.", name)
 	fmt.Println("Este programa está na versão", version)
+	fmt.Println()
 }
 
 func menu() {
 	fmt.Println("1 - Iniciar Monitoramento")
 	fmt.Println("2 - Exibir Logs")
 	fmt.Println("3 - Sair do Programa")
+	fmt.Println()
 }
 
 func readCommand() int {
@@ -63,17 +71,15 @@ func readCommand() int {
 func startsMonitoring() {
 	fmt.Println("Monitorando...")
 
-	sites := []string{
-		"https://httpstat.us/Random/200,201,208,400,404,500",
-		"https://www.alura.com.br",
-		"https://www.caelum.com.br",
-	}
+	sites := readFileWithSites()
 
 	for i := 0; i < numerOfMonitoring; i++ {
 		for i, site := range sites {
 			fmt.Println("Testando site:", i, ", Site:", site)
 			siteTest(site)
 		}
+
+		fmt.Println()
 
 		time.Sleep(delay * time.Second)
 	}
@@ -91,7 +97,63 @@ func siteTest(site string) {
 
 	if statusCode >= 200 && statusCode <= 208 {
 		fmt.Println("Site:", site, "foi carregado com sucesso!")
+		logRegister(site, true)
 	} else {
 		fmt.Println("Site:", site, "está com problemas. Status Code:", statusCode)
+		logRegister(site, false)
 	}
+}
+
+func readFileWithSites() []string {
+	var sites []string
+	file, err := os.Open("sites.txt")
+
+	if err != nil {
+		fmt.Println(errorMessage, err)
+	}
+
+	reader := bufio.NewReader(file)
+	for {
+		line, err := reader.ReadString('\n')
+		line = strings.TrimSpace(line)
+
+		sites = append(sites, line)
+
+		if err == io.EOF {
+			break
+		}
+	}
+
+	err = file.Close()
+	if err != nil {
+		fmt.Println(errorMessage, err)
+	}
+
+	return sites
+}
+
+func logRegister(site string, status bool) {
+	file, err := os.OpenFile("log.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		fmt.Println(errorMessage, err)
+	}
+
+	_, err = file.WriteString(time.Now().Format("02/01/2006 15:04:05") + " - site: " + site + " - online: " + strconv.FormatBool(status) + "\n")
+	if err != nil {
+		fmt.Println(errorMessage, err)
+	}
+
+	err = file.Close()
+	if err != nil {
+		fmt.Println(errorMessage, err)
+	}
+}
+
+func printLogs() {
+	file, err := os.ReadFile("log.log")
+	if err != nil {
+		fmt.Println(errorMessage, err)
+	}
+
+	fmt.Println(string(file))
 }
